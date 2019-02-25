@@ -122,3 +122,118 @@ const addMessage = message => {
     chat.scrollTop = chat.scrollHeight - chat.clientHeight;
   }
 };
+// Show the login page
+const showLogin = (error = {}) => {
+	if(document.querySelectorAll('.login').length) {
+	  document.querySelector('.heading').insertAdjacentHTML('beforeend', `<p>There was an error: ${error.message}</p>`);
+	} else {
+	  document.getElementById('app').innerHTML = loginHTML;
+	}
+  };
+  
+  // Shows the chat page
+  const showChat = async () => {
+	document.getElementById('app').innerHTML = chatHTML;
+  
+	// Find the latest 25 messages. They will come with the newest first
+	// which is why we have to reverse before adding them
+	const messages = await client.service('messages').find({
+	  query: {
+		$sort: { createdAt: -1 },
+		$limit: 25
+	  }
+	});
+  
+	// We want to show the newest message last
+	messages.data.reverse().forEach(addMessage);
+  
+	// Find all users
+	const users = await client.service('users').find();
+  
+	users.data.forEach(addUser);
+  };
+
+  // Retrieve email/password object from the login/signup page
+const getCredentials = () => {
+	const user = {
+	  email: document.querySelector('[name="email"]').value,
+	  password: document.querySelector('[name="password"]').value
+	};
+  
+	return user;
+  };
+  
+  // Log in either using the given email/password or the token from storage
+  const login = async credentials => {
+	try {
+	  if(!credentials) {
+		// Try to authenticate using the JWT from localStorage
+		await client.authenticate();
+	  } else {
+		// If we get login information, add the strategy we want to use for login
+		const payload = Object.assign({ strategy: 'local' }, credentials);
+  
+		await client.authenticate(payload);
+	  }
+  
+	  // If successful, show the chat page
+	  showChat();
+	} catch(error) {
+	  // If we got an error, show the login page
+	  showLogin(error);
+	}
+  };
+  
+  document.addEventListener('click', async ev => {
+	switch(ev.target.id) {
+	case 'signup': {
+	  // For signup, create a new user and then log them in
+	  const credentials = getCredentials();
+  
+	  // First create the user
+	  await client.service('users').create(credentials);
+	  // If successful log them in
+	  await login(credentials);
+  
+	  break;
+	}
+	case 'login': {
+	  const user = getCredentials();
+  
+	  await login(user);
+  
+	  break;
+	}
+	case 'logout': {
+	  await client.logout();
+  
+	  document.getElementById('app').innerHTML = loginHTML;
+  
+	  break;
+	}
+	}
+  });
+
+  document.addEventListener('submit', async ev => {
+	if(ev.target.id === 'send-message') {
+	  // This is the message text input field
+	  const input = document.querySelector('[name="text"]');
+  
+	  ev.preventDefault();
+  
+	  // Create a new message and then clear the input field
+	  await client.service('messages').create({
+		text: input.value
+	  });
+  
+	  input.value = '';
+	}
+  });
+  
+  // Listen to created events and add the new message in real-time
+  client.service('messages').on('created', addMessage);
+  
+  // We will also see when new users get created in real-time
+  client.service('users').on('created', addUser);
+  
+  login();
