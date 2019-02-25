@@ -1,6 +1,6 @@
-# feathers-nedb
+# feathers_nedb
 
-> 
+> Hi
 
 ## About
 
@@ -14,7 +14,7 @@ Getting up and running is as easy as 1, 2, 3.
 2. Install your dependencies
 
     ```
-    cd path/to/feathers-nedb; npm install
+    cd path/to/feathers_nedb; npm install
     ```
 
 3. Start your app
