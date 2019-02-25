@@ -1,6 +1,6 @@
 # feathers_nedb
 
-> Hi
+> hi
 
 ## About
 
